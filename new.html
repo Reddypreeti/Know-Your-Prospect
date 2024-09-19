@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Form with Age and DOB Validation</title>
+    <style>
+        body {
+            background-color: rgb(0, 140, 255);
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        @media (max-width: 600px) {
+            .container {
+                max-width: 90%;
+                padding: 15px;
+            }
+            .title {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="title">Fill the Form</div>
+
+<div class="container">
+    <form id="userForm">
+        <div class="form-group">
+            <label for="fullName">Full Name:</label>
+            <input type="text" id="fullName" name="fullName" required>
+        </div>
+        <div class="form-group">
+            <label for="surname">Surname:</label>
+            <input type="text" id="surname" name="surname" required>
+        </div>
+        <div class="form-group">
+            <label for="dob">Date of Birth:</label>
+            <input type="date" id="dob" name="dob" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="mobileNumber">Mobile Number:</label>
+            <input type="tel" id="mobileNumber" name="mobileNumber" required pattern="[0-9]{10}">
+        </div>
+        <div class="form-group">
+            <label for="idProof">ID Proof:</label>
+            <select id="idProof" name="idProof" required>
+                <option value="">Select ID Proof</option>
+                <option value="passport">Passport</option>
+                <option value="driving_license">Driving License</option>
+                <option value="aadhar_card">Aadhar Card</option>
+                <option value="pan_card">PAN Card</option>
+            </select>
+        </div>
+        <div class="form-group" id="uploadGroup" style="display:none;">
+            <label for="idProofFile">Upload ID Proof Document:</label>
+            <input type="file" id="idProofFile" name="idProofFile" accept=".txt" required>
+        </div>
+        <button type="submit" class="submit-btn">Submit</button>
+    </form>
+    <div id="message" class="message"></div>
+</div>
+
+<script>
+    // Show upload field when ID proof is selected
+    document.getElementById('idProof').addEventListener('change', function() {
+        const idProof = document.getElementById('idProof').value;
+        const uploadGroup = document.getElementById('uploadGroup');
+        const idProofFile = document.getElementById('idProofFile');
+
+        if (idProof) {
+            uploadGroup.style.display = 'block';
+            idProofFile.required = true;
+        } else {
+            uploadGroup.style.display = 'none';
+            idProofFile.required = false;
+        }
+    });
+
+    // Form validation and file reading
+    document.getElementById('userForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const dobInput = new Date(document.getElementById('dob').value);
+        const today = new Date();
+        let age = today.getFullYear() - dobInput.getFullYear();
+        const m = today.getMonth() - dobInput.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dobInput.getDate())) {
+            age--;
+        }
+
+        const idProofFile = document.getElementById('idProofFile').files[0];
+        const message = document.getElementById('message');
+
+        if (!idProofFile) {
+            message.className = 'message error';
+            message.innerText = 'Please upload a valid file for ID proof.';
+            message.style.display = 'block';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const fileContent = event.target.result;
+            const lines = fileContent.split('\n');
+
+            let fileFirstName = '';
+            let fileLastName = '';
+            let fileDob = '';
+
+            lines.forEach(line => {
+                const parts = line.split(':');
+                if (parts.length === 2) {
+                    const key = parts[0].trim();
+                    const value = parts[1].trim();
+                    if (key === 'First Name') {
+                        fileFirstName = value.toLowerCase();
+                    } else if (key === 'Last Name') {
+                        fileLastName = value.toLowerCase();
+                    } else if (key === 'Date of Birth') {
+                        fileDob = new Date(value);
+                    }
+                }
+            });
+
+            const inputFirstName = document.getElementById('fullName').value.trim().toLowerCase();
+            const inputLastName = document.getElementById('surname').value.trim().toLowerCase();
+
+            if (inputFirstName === fileFirstName && inputLastName === fileLastName) {
+                if (dobInput.getTime() === fileDob.getTime()) {
+                    if (age >= 18 && age <= 25) {
+                        message.className = 'message success';
+                        message.innerText = 'Congratulations! You have received a great discount. The coupon has been sent to your registered mobile number.';
+                    } else {
+                        message.className = 'message error';
+                        message.innerText = 'You are not eligible for this discount because your age is not between 18 and 25.';
+                    }
+                } else {
+                    message.className = 'message error';
+                    message.innerText = 'The Date of Birth does not match with the ID proof.';
+                }
+            } else {
+                message.className = 'message error';
+                message.innerText = 'The name does not match with the ID proof.';
+            }
+
+            message.style.display = 'block';
+        };
+
+        reader.onerror = function() {
+            message.className = 'message error';
+            message.innerText = 'There was an error reading the file. Please try again.';
+            message.style.display = 'block';
+        };
+
+        reader.readAsText(idProofFile);
+    });
+</script>
+
+</body>
+</html>
